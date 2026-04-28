@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ห้องเรียนแสนสนุก - ชุดความรู้ใหม่</title>
+    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --font-main: 'Mali', cursive;
+        }
+        body {
+            font-family: var(--font-main);
+            background-color: #fdf2f8;
+            background-image: radial-gradient(#fbcfe8 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .nav-scroll::-webkit-scrollbar { display: none; }
+        .lesson-card { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .lesson-card:hover { transform: scale(1.05); }
+        .emoji-pop { animation: pop 0.5s ease-out; }
+        @keyframes pop {
+            0% { transform: scale(0.5); }
+            70% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20">
+
+<header class="bg-white p-6 shadow-md rounded-b-[3rem] text-center sticky top-0 z-50 border-b-4 border-pink-300">
+    <h1 class="text-3xl font-bold text-pink-600 mb-2">🌟 ห้องเรียนแสนสนุก (ชุดใหม่)</h1>
+    <div id="scoreBox" class="inline-flex items-center bg-pink-100 px-6 py-2 rounded-full border-2 border-pink-400 text-pink-700 font-bold text-xl shadow-inner transition-all duration-300">
+        ✨ คะแนนสะสม: <span id="currentScore" class="ml-2">0</span>
+    </div>
+</header>
+
+<main class="container mx-auto px-4 mt-8">
+    <!-- แถบเลือกสัปดาห์ -->
+    <div class="bg-white/80 backdrop-blur-sm p-4 rounded-3xl shadow-sm mb-8 sticky top-32 z-40 overflow-hidden">
+        <div id="weekNav" class="nav-scroll flex overflow-x-auto gap-4 pb-2 px-2">
+            <!-- ปุ่มสัปดาห์จะถูกสร้างที่นี่ -->
+        </div>
+    </div>
+
+    <!-- หัวข้อและเนื้อหา -->
+    <div class="text-center mb-10">
+        <h2 id="weekTheme" class="text-2xl md:text-4xl font-bold text-indigo-700 drop-shadow-sm">
+            กำลังเตรียมบทเรียน...
+        </h2>
+    </div>
+
+    <div id="lessonGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        <!-- การ์ดบทเรียน -->
+    </div>
+</main>
+
+<!-- Quiz Modal -->
+<div id="quizModal" class="hidden fixed inset-0 z-[100] bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-[3rem] p-10 border-8 border-indigo-400 shadow-2xl relative text-center">
+        <button onclick="closeQuiz()" class="absolute -top-4 -right-4 bg-red-500 text-white w-12 h-12 rounded-full text-3xl shadow-lg">&times;</button>
+        <h3 id="quizTitle" class="text-2xl font-bold text-indigo-600 mb-8">ข้อไหนคือ...</h3>
+        <div id="quizOptions" class="grid grid-cols-1 gap-4"></div>
+    </div>
+</div>
+
+<script>
+    const newWeekData = [
+        {
+            week: 1, theme: "สัตว์โลกน่ารัก",
+            items: [
+                { icon: "🐘", title: "ช้าง", story: "ช้างเป็นสัตว์บกที่ใหญ่ที่สุด มีงวงยาวไว้หยิบจับอาหารและพ่นน้ำ", q: "ตัวไหนคือช้าง?", ans: "🐘" },
+                { icon: "🦒", title: "ยีราฟ", story: "ยีราฟมีคอยาวมาก ช่วยให้มันกินใบไม้ที่อยู่สูงๆ บนต้นไม้ได้", q: "ตัวไหนคือกยีราฟ?", ans: "🦒" },
+                { icon: "🦁", title: "สิงโต", story: "สิงโตเป็นเจ้าป่า มีเสียงคำรามดังไปไกลเพื่อแสดงความแข็งแรง", q: "ตัวไหนคือสิงโต?", ans: "🦁" },
+                { icon: "🐧", title: "เพนกวิน", story: "เพนกวินเป็นนกที่บินไม่ได้ แต่มันว่ายน้ำเก่งมากและชอบอากาศหนาว", q: "ตัวไหนคือเพนกวิน?", ans: "🐧" },
+                { icon: "🐼", title: "แพนด้า", story: "แพนด้าชอบกินไม้ไผ่เป็นอาหาร มีสีขาวดำ และชอบนอนพักผ่อน", q: "ตัวไหนคือแพนด้า?", ans: "🐼" },
+                { icon: "🐢", title: "เต่า", story: "เต่ามีกระดองแข็งไว้ป้องกันตัว และเดินช้าๆ อย่างมั่นคง", q: "ตัวไหนคือเต่า?", ans: "🐢" },
+                { icon: "🐒", title: "ลิง", story: "ลิงชอบปีนต้นไม้และกินกล้วย มันฉลาดและซนมากเลย", q: "ตัวไหนคือลิง?", ans: "🐒" },
+                { icon: "🐝", title: "ผึ้ง", story: "ผึ้งขยันหาน้ำหวานจากดอกไม้เพื่อมาทำน้ำผึ้งแสนอร่อย", q: "ตัวไหนคือผึ้ง?", ans: "🐝" },
+                { icon: "🦋", title: "ผีเสื้อ", story: "ผีเสื้อมีปีกสวยงามหลายสี บินไปมาท่ามกลางดอกไม้", q: "ตัวไหนคือผีเสื้อ?", ans: "🦋" },
+                { icon: "🐳", title: "วาฬ", story: "วาฬอาศัยอยู่ในทะเลลึก และพ่นน้ำออกมาจากบนหัวได้ด้วย", q: "ตัวไหนคือวาฬ?", ans: "🐳" }
+            ]
+        },
+        {
+            week: 2, theme: "ผักผลไม้แสนดี",
+            items: [
+                { icon: "🍎", title: "แอปเปิ้ล", story: "แอปเปิ้ลมีทั้งสีแดงและสีเขียว กินแล้วช่วยให้ร่างกายแข็งแรง", q: "ลูกไหนคือแอปเปิ้ล?", ans: "🍎" },
+                { icon: "🍌", title: "กล้วย", story: "กล้วยให้พลังงานเยอะมาก เหมาะสำหรับกินก่อนไปวิ่งเล่น", q: "ลูกไหนคือกล้วย?", ans: "🍌" },
+                { icon: "🍉", title: "แตงโม", story: "แตงโมมีน้ำเยอะและหวานชื่นใจ ช่วยให้หายร้อนในวันที่แดดจ้า", q: "ลูกไหนคือแตงโม?", ans: "🍉" },
+                { icon: "🍇", title: "องุ่น", story: "องุ่นลูกเล็กๆ อยู่รวมกันเป็นพวง มีทั้งรสหวานและรสเปรี้ยว", q: "ลูกไหนคือองุ่น?", ans: "🍇" },
+                { icon: "🍓", title: "สตรอว์เบอร์รี", story: "สตรอว์เบอร์รีสีแดงสด มีวิตามินซีช่วยป้องกันไข้หวัด", q: "ลูกไหนคือสตรอว์เบอร์รี?", ans: "🍓" },
+                { icon: "🥕", title: "แครอท", story: "แครอทสีส้มช่วยบำรุงสายตา ทำให้เรามองเห็นได้ชัดเจน", q: "อันไหนคือแครอท?", ans: "🥕" },
+                { icon: "🥦", title: "บรอกโคลี", story: "บรอกโคลีเหมือนต้นไม้จิ๋ว ช่วยให้ขับถ่ายง่ายและท้องไม่ผูก", q: "อันไหนคือบรอกโคลี?", ans: "🥦" },
+                { icon: "🌽", title: "ข้าวโพด", story: "ข้าวโพดสีเหลืองเรียงเม็ดสวยงาม มีรสหวานนุ่มเคี้ยวสนุก", q: "อันไหนคือข้าวโพด?", ans: "🌽" },
+                { icon: "🍅", title: "มะเขือเทศ", story: "มะเขือเทศช่วยให้ผิวพรรณสดใสและมีสุขภาพดี", q: "ลูกไหนคือมะเขือเทศ?", ans: "🍅" },
+                { icon: "🍍", title: "สับปะรด", story: "สับปะรดมีตาเยอะรอบตัว และช่วยย่อยอาหารได้ดีมาก", q: "ลูกไหนคือสับปะรด?", ans: "🍍" }
+            ]
+        },
+        {
+            week: 3, theme: "การคมนาคม",
+            items: [
+                { icon: "✈️", title: "เครื่องบิน", story: "เครื่องบินพาเราบินไปบนท้องฟ้าเพื่อไปยังที่ไกลๆ ได้เร็วที่สุด", q: "ลำไหนคือเครื่องบิน?", ans: "✈️" },
+                { icon: "🚂", title: "รถไฟ", story: "รถไฟวิ่งบนรางและส่งเสียงฉึกฉัก พาคนไปได้เยอะมากเลย", q: "ขบวนไหนคือรถไฟ?", ans: "🚂" },
+                { icon: "🚢", title: "เรือ", story: "เรือแล่นอยู่ในน้ำ ใช้สำหรับข้ามแม่น้ำหรือมหาสมุทร", q: "ลำไหนคือเรือ?", ans: "🚢" },
+                { icon: "🚁", title: "เฮลิคอปเตอร์", story: "เฮลิคอปเตอร์มีใบพัดอยู่บนหัว สามารถบินขึ้นลงทางดิ่งได้", q: "ลำไหนคือเฮลิคอปเตอร์?", ans: " helicopter" },
+                { icon: "🚲", title: "จักรยาน", story: "การปั่นจักรยานช่วยประหยัดพลังงานและทำให้ขาของเราแข็งแรง", q: "คันไหนคือจักรยาน?", ans: "🚲" },
+                { icon: "🚌", title: "รถเมล์", story: "รถเมล์รับส่งผู้คนตามป้ายต่างๆ ในเมืองใหญ่", q: "คันไหนคือรถเมล์?", ans: "🚌" },
+                { icon: "🚑", title: "รถพยาบาล", story: "รถพยาบาลมีไซเรนส่งเสียงดังเพื่อรีบพาคนป่วยไปโรงพยาบาล", q: "คันไหนคือรถพยาบาล?", ans: "🚑" },
+                { icon: "🚀", title: "จรวด", story: "จรวดมีความเร็วสูงมาก ใช้เดินทางออกไปสำรวจอวกาศ", q: "ลำไหนคือจรวด?", ans: "🚀" },
+                { icon: "🛵", title: "มอเตอร์ไซค์", story: "รถมอเตอร์ไซค์วิ่งได้คล่องตัวและรวดเร็วบนถนนขนาดเล็ก", q: "คันไหนคือมอเตอร์ไซค์?", ans: "🛵" },
+                { icon: "🚠", title: "กระเช้าไฟฟ้า", story: "กระเช้าไฟฟ้าพาเราขึ้นไปบนเขาสูงเพื่อดูวิวสวยๆ", q: "อันไหนคือกระเช้า?", ans: "🚠" }
+            ]
+        },
+        {
+            week: 4, theme: "อากาศและฤดูกาล",
+            items: [
+                { icon: "☀️", title: "แดดออก", story: "แสงแดดช่วยให้ผ้าแห้งเร็วและให้ความสว่างแก่โลก", q: "ภาพไหนคือแดดออก?", ans: "☀️" },
+                { icon: "🌧️", title: "ฝนตก", story: "ฝนช่วยให้ต้นไม้สดชื่น แต่อย่าไปตากฝนนะเดี๋ยวจะเป็นหวัด", q: "ภาพไหนคือฝนตก?", ans: "🌧️" },
+                { icon: "❄️", title: "หิมะ", story: "หิมะมีสีขาวและเย็นจัด ตกลงมาในที่ที่อากาศหนาวมากๆ", q: "ภาพไหนคือหิมะ?", ans: "❄️" },
+                { icon: "⚡", title: "ฟ้าร้อง", story: "เวลาฝนตกหนักอาจมีฟ้าร้องเสียงดัง เราควรอยู่ในบ้านที่ปลอดภัย", q: "ภาพไหนคือฟ้าร้อง?", ans: "⚡" },
+                { icon: "🌈", title: "รุ้งกินน้ำ", story: "รุ้งกินน้ำมี 7 สีสวยงาม ปรากฏให้เห็นหลังฝนหยุดตก", q: "ภาพไหนคือรุ้ง?", ans: "🌈" },
+                { icon: "🌪️", title: "ลมพายุ", story: "พายุคือลมที่พัดแรงมาก เราต้องระมัดระวังไม่ไปอยู่ใกล้ต้นไม้ใหญ่", q: "ภาพไหนคือพายุ?", ans: "🌪️" },
+                { icon: "🌙", title: "กลางคืน", story: "กลางคืนคือเวลาพักผ่อน มีดวงจันทร์และดวงดาวส่องแสง", q: "ภาพไหนคือกลางคืน?", ans: "🌙" },
+                { icon: "🌊", title: "คลื่นทะเล", story: "ลมพัดผ่านผิวน้ำทำให้เกิดคลื่นสัดเข้าหาฝั่งที่ชายหาด", q: "ภาพไหนคือคลื่น?", ans: "🌊" },
+                { icon: "☁️", title: "ก้อนเมฆ", story: "ก้อนเมฆสีขาวนุ่มนิ่มลอยอยู่บนฟ้า เปลี่ยนรูปร่างได้หลายแบบ", q: "ภาพไหนคือก้อนเมฆ?", ans: "☁️" },
+                { icon: "🌡️", title: "อากาศร้อน", story: "เมื่ออุณหภูมิสูงขึ้นเราจะรู้สึกร้อน ต้องดื่มน้ำเยอะๆ นะ", q: "ภาพไหนคืออากาศร้อน?", ans: "🌡️" }
+            ]
+        },
+        {
+            week: 5, theme: "กิจวัตรของฉัน",
+            items: [
+                { icon: "⏰", title: "ตื่นนอน", story: "เราควรตื่นนอนตอนเช้าด้วยความสดชื่นเพื่อเตรียมตัวไปเรียน", q: "ภาพไหนคือตื่นนอน?", ans: "⏰" },
+                { icon: "🪥", title: "แปรงฟัน", story: "แปรงฟันวันละ 2 ครั้ง เช้าและก่อนนอน เพื่อให้ฟันสะอาดแข็งแรง", q: "ภาพไหนคือแปรงฟัน?", ans: "🪥" },
+                { icon: "🚿", title: "อาบน้ำ", story: "อาบน้ำถูสบู่ช่วยกำจัดสิ่งสกปรกและทำให้ตัวหอมสดชื่น", q: "ภาพไหนคืออาบน้ำ?", ans: "🚿" },
+                { icon: "👕", title: "แต่งตัว", story: "เลือกใส่เสื้อผ้าที่สะอาดและเรียบร้อยก่อนออกจากบ้าน", q: "ภาพไหนคือแต่งตัว?", ans: "👕" },
+                { icon: "🥣", title: "กินข้าวเช้า", story: "มื้อเช้าสำคัญที่สุด ช่วยให้สมองและร่างกายมีพลังงานทำงาน", q: "ภาพไหนคือมื้อเช้า?", ans: "🥣" },
+                { icon: "🎒", title: "ไปโรงเรียน", story: "สะพายเป้ไปโรงเรียนเพื่อไปเจอคุณครูและเพื่อนๆ ที่น่ารัก", q: "ภาพไหนคือไปโรงเรียน?", ans: "🎒" },
+                { icon: "📝", title: "ทำการบ้าน", story: "การทำการบ้านช่วยให้เราทบทวนความรู้ที่เรียนมาในแต่ละวัน", q: "ภาพไหนคือทำการบ้าน?", ans: "📝" },
+                { icon: "🧸", title: "เก็บของเล่น", story: "เมื่อเล่นเสร็จแล้วต้องเก็บของเข้าที่ให้เรียบร้อย ไม่ให้บ้านรก", q: "ภาพไหนคือเก็บของเล่น?", ans: "🧸" },
+                { icon: "🧼", title: "ล้างมือ", story: "ล้างมือบ่อยๆ ก่อนกินอาหารเพื่อป้องกันเชื้อโรคเข้าสู่ร่างกาย", q: "ภาพไหนคือล้างมือ?", ans: "🧼" },
+                { icon: "😴", title: "เข้านอน", story: "นอนหลับพักผ่อนให้เพียงพอ เพื่อให้ร่างกายเติบโตแข็งแรง", q: "ภาพไหนคือเข้านอน?", ans: "😴" }
+            ]
+        },
+        {
+            week: 6, theme: "เครื่องดนตรี",
+            items: [
+                { icon: "🎸", title: "กีตาร์", story: "กีตาร์มีสาย 6 สาย ใช้ดีดเพื่อให้เกิดท่วงทำนองที่ไพเราะ", q: "อันไหนคือกีตาร์?", ans: "🎸" },
+                { icon: "🎹", title: "เปียโน", story: "เปียโนมีลิ่มนิ้วสีขาวดำ ใช้ปลายนิ้วกดเพื่อสร้างเสียงเพลง", q: "อันไหนคือเปียโน?", ans: "🎹" },
+                { icon: "🥁", title: "กลอง", story: "กลองให้จังหวะที่สนุกสนาน เราใช้ไม้ตีเพื่อให้เกิดเสียงดัง", q: "อันไหนคือกลอง?", ans: "🥁" },
+                { icon: "🎻", title: "ไวโอลิน", story: "ไวโอลินใช้คันชักสีไปบนสายเพื่อให้เกิดเสียงที่อ่อนหวาน", q: "อันไหนคือไวโอลิน?", ans: "Violin" },
+                { icon: "🎺", title: "ทรัมเป็ต", story: "ทรัมเป็ตเป็นเครื่องเป่าทองเหลือง มีเสียงที่สดใสและดังไกล", q: "อันไหนคือทรัมเป็ต?", ans: "🎺" },
+                { icon: "🎷", title: "แซกโซโฟน", story: "แซกโซโฟนมีเสียงที่นุ่มนวล มักใช้เล่นในวงดนตรีแจ๊ส", q: "อันไหนคือแซกโซโฟน?", ans: "🎷" },
+                { icon: "🪗", title: "หีบเพลง", story: "แอคคอร์เดียนหรือหีบเพลง ใช้มือยืดหดเพื่อให้เกิดเสียง", q: "อันไหนคือหีบเพลง?", ans: "🪗" },
+                { icon: "🪘", title: "กลองยาว", story: "กลองยาวเป็นเครื่องดนตรีไทยที่ใช้ในงานรื่นเริงและขบวนแห่", q: "อันไหนคือกลองยาว?", ans: "🪘" },
+                { icon: "🔔", title: "ระฆัง", story: "ระฆังใช้ตีเพื่อให้สัญญาณเสียงกังวานไปได้ไกล", q: "อันไหนคือระฆัง?", ans: "🔔" },
+                { icon: "🎶", title: "ตัวโน้ต", story: "ตัวโน้ตเป็นภาษาของดนตรีที่ช่วยให้เราบันทึกเสียงเพลงได้", q: "อันไหนคือตัวโน้ต?", ans: "🎶" }
+            ]
+        },
+        {
+            week: 7, theme: "กีฬาสุดมันส์",
+            items: [
+                { icon: "⚽", title: "ฟุตบอล", story: "ฟุตบอลเล่นเป็นทีม ใช้เท้าเตะลูกบอลเข้าประตูคู่ต่อสู้", q: "ภาพไหนคือฟุตบอล?", ans: "⚽" },
+                { icon: "🏀", title: "บาสเกตบอล", story: "บาสเกตบอลใช้มือโยนลูกบอลลงห่วง เพื่อสะสมคะแนนให้ทีม", q: "ภาพไหนคือบาสเกตบอล?", ans: "🏀" },
+                { icon: "🏸", title: "แบดมินตัน", story: "ใช้ไม้แร็กเก็ตตีลูกขนไก่โต้กันไปมาเหนือตาข่าย", q: "ภาพไหนคือแบดมินตัน?", ans: "🏸" },
+                { icon: "🏊", title: "ว่ายน้ำ", story: "การว่ายน้ำช่วยให้ร่างกายแข็งแรงทุกส่วน และช่วยคลายร้อนได้ดี", q: "ภาพไหนคือว่ายน้ำ?", ans: "🏊" },
+                { icon: "🏃", title: "วิ่งแข่ง", story: "การวิ่งแข่งช่วยฝึกความเร็วและความอดทนของปอดและหัวใจ", q: "ภาพไหนคือการวิ่ง?", ans: "🏃" },
+                { icon: "🎾", title: "เทนนิส", story: "เทนนิสใช้ไม้ตีลูกบอลสีเขียวโต้กันในสนามขนาดใหญ่", q: "ภาพไหนคือเทนนิส?", ans: "🎾" },
+                { icon: "🏐", title: "วอลเลย์บอล", story: "วอลเลย์บอลใช้มือตบลูกบอลโต้กันไม่ให้ลูกตกพื้นดิน", q: "ภาพไหนคือวอลเลย์บอล?", ans: "🏐" },
+                { icon: "🏓", title: "ปิงปอง", story: "ปิงปองหรือเทเบิลเทนนิส เล่นบนโต๊ะด้วยไม้ขนาดเล็ก", q: "ภาพไหนคือปิงปอง?", ans: "🏓" },
+                { icon: "🛹", title: "สเก็ตบอร์ด", story: "สเก็ตบอร์ดใช้การทรงตัวบนแผ่นไม้ที่มีล้อเพื่อเคลื่อนที่", q: "ภาพไหนคือสเก็ตบอร์ด?", ans: "🛹" },
+                { icon: "🏹", title: "ยิงธนู", story: "การยิงธนูต้องใช้สมาธิและการเล็งที่แม่นยำเพื่อเข้าเป้า", q: "ภาพไหนคือยิงธนู?", ans: "🏹" }
+            ]
+        },
+        {
+            week: 8, theme: "สีสันแสนสนุก",
+            items: [
+                { icon: "🔴", title: "สีแดง", story: "สีแดงสดใสเหมือนแอปเปิ้ลและดอกกุหลาบ", q: "อันไหนคือสีแดง?", ans: "🔴" },
+                { icon: "🔵", title: "สีน้ำเงิน", story: "สีน้ำเงินเหมือนน้ำในทะเลและท้องฟ้าที่กว้างใหญ่", q: "อันไหนคือสีน้ำเงิน?", ans: "🔵" },
+                { icon: "🟡", title: "สีเหลือง", story: "สีเหลืองสดใสเหมือนดวงอาทิตย์และกล้วยสุก", q: "อันไหนคือสีเหลือง?", ans: "🟡" },
+                { icon: "🟢", title: "สีเขียว", story: "สีเขียวเหมือนใบไม้และหญ้าที่ขึ้นตามธรรมชาติ", q: "อันไหนคือสีเขียว?", ans: "🟢" },
+                { icon: "🟠", title: "สีส้ม", story: "สีส้มเหมือนผลส้มและแครอทที่น่ากิน", q: "อันไหนคือสีส้ม?", ans: "🟠" },
+                { icon: "🟣", title: "สีม่วง", story: "สีม่วงเหมือนดอกอัญชันและองุ่นบางชนิด", q: "อันไหนคือสีม่วง?", ans: "🟣" },
+                { icon: "⚪", title: "สีขาว", story: "สีขาวดูสะอาดเหมือนปุยเมฆและกระดาษเปล่า", q: "อันไหนคือสีขาว?", ans: "⚪" },
+                { icon: "⚫", title: "สีดำ", story: "สีดำมืดเหมือนกลางคืนที่ไม่มีดวงจันทร์", q: "อันไหนคือสีดำ?", ans: "⚫" },
+                { icon: "🟤", title: "สีน้ำตาล", story: "สีน้ำตาลเหมือนลำต้นของต้นไม้และช็อกโกแลต", q: "อันไหนคือสีน้ำตาล?", ans: "🟤" },
+                { icon: "🌈", title: "หลากสี", story: "เมื่อทุกสีมารวมกันก็จะกลายเป็นรุ้งกินน้ำที่สวยงาม", q: "อันไหนคือหลากสี?", ans: "🌈" }
+            ]
+        },
+        {
+            week: 9, theme: "รูปทรงเรขาคณิต",
+            items: [
+                { icon: "⭕", title: "วงกลม", story: "วงกลมไม่มีเหลี่ยม เหมือนลูกบอลและล้อรถ", q: "รูปไหนคือวงกลม?", ans: "⭕" },
+                { icon: "🔺", title: "สามเหลี่ยม", story: "สามเหลี่ยมมี 3 มุม เหมือนแซนด์วิชและหลังคาบ้าน", q: "รูปไหนคือสามเหลี่ยม?", ans: "🔺" },
+                { icon: "⬛", title: "สี่เหลี่ยม", story: "สี่เหลี่ยมมี 4 มุมเท่ากัน เหมือนกล่องของขวัญและหน้าต่าง", q: "รูปไหนคือสี่เหลี่ยม?", ans: "⬛" },
+                { icon: "⭐", title: "ห้าแฉก", story: "ดาวห้าแฉกดูระยิบระยับเหมือนดวงดาวบนท้องฟ้า", q: "รูปไหนคือรูปดาว?", ans: "⭐" },
+                { icon: "❤️", title: "รูปหัวใจ", story: "รูปหัวใจใช้แสดงความรักและความปรารถนาดีต่อกัน", q: "รูปไหนคือหัวใจ?", ans: "❤️" },
+                { icon: "🔷", title: "ข้าวหลามตัด", story: "รูปทรงเพชรหรือข้าวหลามตัด มีมุมแหลมที่ดูสวยงาม", q: "รูปไหนคือข้าวหลามตัด?", ans: "🔷" },
+                { icon: "🌙", title: "พระจันทร์เสี้ยว", story: "รูปทรงโค้งเหมือนดวงจันทร์ในคืนวันแรม", q: "รูปไหนคือพระจันทร์เสี้ยว?", ans: "🌙" },
+                { icon: "📦", title: "ลูกบาศก์", story: "ลูกบาศก์เป็นสี่เหลี่ยมที่มีความลึก เหมือนกล่องพัสดุ", q: "อันไหนคือลูกบาศก์?", ans: "📦" },
+                { icon: "🛑", title: "แปดเหลี่ยม", story: "แปดเหลี่ยมมีมุมเยอะมาก มักใช้ในป้ายจราจรให้หยุดรถ", q: "รูปไหนคือแปดเหลี่ยม?", ans: "🛑" },
+                { icon: "📏", title: "เส้นตรง", story: "เส้นตรงช่วยให้เราลากเส้นเชื่อมโยงสิ่งต่างๆ เข้าด้วยกัน", q: "อันไหนคือเส้นตรง?", ans: "📏" }
+            ]
+        },
+        {
+            week: 10, theme: "รักษ์โลกกันเถอะ",
+            items: [
+                { icon: "🌳", title: "ต้นไม้", story: "ต้นไม้ช่วยดูดซับก๊าซพิษและปล่อยอากาศบริสุทธิ์ให้เราหายใจ", q: "ภาพไหนคือต้นไม้?", ans: "🌳" },
+                { icon: "♻️", title: "รีไซเคิล", story: "การรีไซเคิลคือการนำของเก่ากลับมาใช้ใหม่เพื่อลดขยะ", q: "ภาพไหนคือรีไซเคิล?", ans: "♻️" },
+                { icon: "🗑️", title: "ถังขยะ", story: "เราควรทิ้งขยะลงถังทุกครั้งเพื่อความสะอาดของบ้านเมือง", q: "ภาพไหนคือถังขยะ?", ans: "🗑️" },
+                { icon: "💧", title: "ประหยัดน้ำ", story: "ใช้น้ำอย่างรู้ค่า ปิดก๊อกให้สนิทเมื่อไม่ใช้งาน", q: "ภาพไหนคือหยดน้ำ?", ans: "💧" },
+                { icon: "💡", title: "ประหยัดไฟ", story: "ปิดไฟและเครื่องใช้ไฟฟ้าทุกครั้งเมื่อไม่ได้อยู่ในห้อง", q: "ภาพไหนคือหลอดไฟ?", ans: "💡" },
+                { icon: "🛍️", title: "ถุงผ้า", story: "ใช้ถุงผ้าแทนถุงพลาสติกเพื่อลดขยะที่ย่อยสลายยาก", q: "ภาพไหนคือถุงผ้า?", ans: "🛍️" },
+                { icon: "🚲", title: "ปั่นจักรยาน", story: "การปั่นจักรยานหรือเดินช่วยลดควันพิษจากรถยนต์", q: "ภาพไหนคือจักรยาน?", ans: "🚲" },
+                { icon: "🌱", title: "ปลูกผัก", story: "ปลูกผักไว้กินเองช่วยให้ได้รับสารอาหารที่ปลอดภัยจากสารพิษ", q: "ภาพไหนคือต้นกล้า?", ans: "🌱" },
+                { icon: "🌞", title: "พลังงานแดด", story: "เราใช้แสงแดดมาทำเป็นไฟฟ้าได้ เป็นพลังงานที่สะอาดมาก", q: "ภาพไหนคือดวงอาทิตย์?", ans: "🌞" },
+                { icon: "🌏", title: "โลกสีเขียว", story: "ถ้าเราช่วยกันดูแล โลกของเราก็จะเขียวขจีและน่าอยู่ตลอดไป", q: "ภาพไหนคือโลก?", ans: "🌏" }
+            ]
+        }
+    ];
+
+    let currentWeek = 1;
+    let score = 0;
+    let listenedStatus = {};
+    const dummyIcons = ["🍎", "🚗", "🧸", "⚽", "🐱", "🐶", "🍦", "🍭", "🍉", "🚁", "🦋", "🍄", "🧁", "🍍", "🦁", "🐧"];
+
+    function initNav() {
+        const nav = document.getElementById('weekNav');
+        nav.innerHTML = '';
+        newWeekData.forEach(w => {
+            const btn = document.createElement('button');
+            const isActive = w.week === currentWeek;
+            btn.className = `flex-shrink-0 px-6 py-2 rounded-2xl font-bold transition-all border-2 ${
+                isActive ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-white text-indigo-500 border-indigo-100 hover:border-indigo-300'
+            }`;
+            btn.innerText = `สัปดาห์ ${w.week}`;
+            btn.onclick = () => { currentWeek = w.week; initNav(); renderLessons(); };
+            nav.appendChild(btn);
+            if(isActive) btn.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+        });
+    }
+
+    function renderLessons() {
+        const grid = document.getElementById('lessonGrid');
+        const themeTitle = document.getElementById('weekTheme');
+        grid.innerHTML = '';
+        const group = newWeekData.find(w => w.week === currentWeek);
+        themeTitle.innerText = `Week ${currentWeek}: ${group.theme}`;
+
+        group.items.forEach((item, idx) => {
+            const key = `w${currentWeek}i${idx}`;
+            const card = document.createElement('div');
+            card.className = "lesson-card bg-white p-6 rounded-[2.5rem] shadow-sm border-2 border-transparent hover:border-indigo-200 flex flex-col items-center";
+            card.innerHTML = `
+                <div class="text-6xl mb-4 emoji-pop">${item.icon}</div>
+                <h3 class="text-xl font-bold text-gray-700 mb-6">${item.title}</h3>
+                <div class="w-full space-y-2">
+                    <button onclick="playVoice('${key}', '${item.story}')" class="w-full bg-blue-500 text-white py-3 rounded-2xl font-bold shadow-md active:scale-95 transition-all">🔊 ฟังเรื่องราว</button>
+                    <button id="btn-${key}" onclick="openQuiz(${currentWeek}, ${idx})" class="w-full ${listenedStatus[key] ? 'bg-green-500' : 'bg-gray-300 pointer-events-none'} text-white py-3 rounded-2xl font-bold shadow-md active:scale-95 transition-all">📝 ทดสอบ</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function playVoice(key, text) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'th-TH';
+        msg.rate = 0.9;
+        msg.onend = () => {
+            listenedStatus[key] = true;
+            document.getElementById(`btn-${key}`).className = "w-full bg-green-500 text-white py-3 rounded-2xl font-bold shadow-md active:scale-95 transition-all";
+        };
+        window.speechSynthesis.speak(msg);
+    }
+
+    function openQuiz(wNum, idx) {
+        const item = newWeekData.find(w => w.week === wNum).items[idx];
+        const modal = document.getElementById('quizModal');
+        const optionsDiv = document.getElementById('quizOptions');
+        document.getElementById('quizTitle').innerText = item.q;
+        optionsDiv.innerHTML = '';
+
+        let opts = [{ icon: item.icon, correct: true, name: item.title }];
+        let dummies = dummyIcons.filter(d => d !== item.icon);
+        while(opts.length < 3) {
+            let rIdx = Math.floor(Math.random() * dummies.length);
+            opts.push({ icon: dummies[rIdx], correct: false });
+            dummies.splice(rIdx, 1);
+        }
+        opts.sort(() => Math.random() - 0.5);
+
+        opts.forEach(o => {
+            const b = document.createElement('button');
+            b.className = "p-4 bg-indigo-50 border-4 border-indigo-200 rounded-3xl text-6xl hover:bg-indigo-100 transition-all active:scale-90";
+            b.innerHTML = o.icon;
+            b.onclick = () => {
+                if(o.correct) {
+                    speakSimple(`เก่งมากจ้า นี่คือ ${o.name}`);
+                    updateScore(10);
+                    b.classList.add('bg-green-200', 'border-green-500');
+                    setTimeout(closeQuiz, 1500);
+                } else {
+                    speakSimple("ลองดูอีกทีนะจ๊ะ");
+                    b.classList.add('bg-red-200', 'border-red-500');
+                }
+            };
+            optionsDiv.appendChild(b);
+        });
+        modal.classList.remove('hidden');
+        speakSimple(item.q);
+    }
+
+    function speakSimple(t) {
+        window.speechSynthesis.cancel();
+        const m = new SpeechSynthesisUtterance(t);
+        m.lang = 'th-TH';
+        window.speechSynthesis.speak(m);
+    }
+
+    function updateScore(p) {
+        score += p;
+        document.getElementById('currentScore').innerText = score;
+        const box = document.getElementById('scoreBox');
+        box.classList.add('scale-125', 'bg-yellow-200');
+        setTimeout(() => box.classList.remove('scale-125', 'bg-yellow-200'), 500);
+    }
+
+    function closeQuiz() { document.getElementById('quizModal').classList.add('hidden'); }
+
+    window.onload = () => { initNav(); renderLessons(); };
+</script>
+</body>
+</html>
